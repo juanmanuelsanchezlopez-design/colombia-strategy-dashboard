@@ -1,0 +1,236 @@
+/* =============================================================================
+   tokens.css — Colombia Strategy Dashboard design tokens
+
+   What:  colours, fonts, sizes and spacing copied from the RIGI dashboard,
+          with gaps filled from the Argentina production tracker and the
+          August Equity Flows note.
+   Who:   written by hand by Claude Code in Stage 0 (16 Sep 2026) from the
+          extraction in docs/DESIGN_NOTES.md. No script generates this file.
+   Edit:  only together with docs/DESIGN_NOTES.md, so every value keeps its
+          source. main.css uses these variables and never hard-codes colours.
+
+   Source codes in the comments:
+     rigi:N     reference/rigi/index.html, line N
+     tracker:N  reference/argentina_production/index.html, line N
+     flows      reference/reports/August_Equity_Flows_Colombia_Strategy.pdf,
+                page 3, Charts 1–2 (sampled from the chart images)
+     APPROVED   in neither reference; proposed in Stage 0 and approved by
+                Juan on 16 Sep 2026 (DESIGN_NOTES.md §10–§11, Q3)
+
+   Screen-width breakpoints cannot be CSS variables. RIGI uses 1240px,
+   1024px, 900px, 768px and 620px (rigi:367-426).
+   ============================================================================= */
+
+:root {
+  /* ---- Core palette ------------------------------------------------------- */
+  --navy:            #002060;   /* rigi:14  sidebar, header, panel heads, table headers */
+  --navy-deep:       #002060;   /* rigi:15  (tracker:15 has #001640; RIGI wins) */
+  --navy-hover:      #00306e;   /* rigi:265, rigi:322  hover on navy buttons/headers */
+  --navy-mid:        #95C7F9;   /* rigi:16  light blue: active-tab bar, secondary series */
+  --navy-pale:       #cfdcee;   /* rigi:17  (tracker:17 has #cfe0e8; RIGI wins) */
+  --maroon:          #A73444;   /* rigi:18  subheadings, negatives, errors */
+  --green:           #1A7A4C;   /* rigi:19  positives */
+  --green-on:        #4FBE8B;   /* rigi:133 switch "on" */
+  --bg:              #EFF2F8;   /* rigi:20  page background */
+  --surface:         #ffffff;   /* rigi:21  panels, cards, footer */
+  --border:          #d9e0ea;   /* rigi:22  panel and card borders */
+  --border-firm:     #c3cedb;   /* rigi:23  input borders, table header underline */
+  --text:            #191919;   /* rigi:24  main text */
+  --text-body:       #31404f;   /* rigi:52, rigi:199, rigi:236  secondary body text */
+  --text-muted:      #6b7b96;   /* rigi:25  notes, labels, axis text */
+  --grid:            #e6ebf2;   /* rigi:26  row dividers, chart gridlines */
+  --row-hover:       #f4f7fb;   /* rigi:326 */
+  --row-open:        #eef3fa;   /* rigi:327 */
+  --row-detail:      #f8fafc;   /* rigi:339 */
+  --error-bg:        #fdf4f5;   /* rigi:275, rigi:363 */
+  --grey-pill:       #8a97a8;   /* rigi:336 grey status pill */
+  --grey-blue:       #9AB0BE;   /* rigi:280, rigi:1127 comparison series */
+  --grey-blue-dark:  #5c7183;   /* rigi:283 */
+
+  /* ---- White on navy (sidebar and header) --------------------------------- */
+  --on-navy:         #ffffff;                  /* rigi:61 */
+  --on-navy-78:      rgba(255,255,255,.78);    /* rigi:75  sidebar tab text */
+  --on-navy-62:      rgba(255,255,255,.62);    /* rigi:45, rigi:91  subtitle, analyst email */
+  --on-navy-50:      rgba(255,255,255,.5);     /* rigi:110 outline-button border */
+  --on-navy-45:      rgba(255,255,255,.45);    /* rigi:69  sidebar section title */
+  --on-navy-40:      rgba(255,255,255,.4);     /* rigi:96  sidebar foot */
+  --on-navy-16:      rgba(255,255,255,.16);    /* rigi:87  analysts divider */
+  --on-navy-14:      rgba(255,255,255,.14);    /* rigi:82, rigi:114  active tab, button hover */
+  --on-navy-09:      rgba(255,255,255,.09);    /* rigi:80  tab hover */
+
+  /* ---- Typography --------------------------------------------------------- */
+  --font:            'Segoe UI', 'Segoe UI Web', Tahoma, Geneva, Verdana, sans-serif; /* rigi:27 */
+  --fs-body:         14px;      /* rigi:34 */
+  --fs-body-mobile:  13px;      /* rigi:397 (below 768px) */
+  --lh-body:         1.45;      /* rigi:34 */
+  --fw-regular:      400;
+  --fw-semibold:     600;       /* rigi:51, rigi:74 */
+  --fw-bold:         700;       /* rigi:43-44, rigi:319 */
+
+  --fs-header-title: 1.15rem;   /* rigi:44 */
+  --fs-header-sub:   .8rem;     /* rigi:45 */
+  --fs-wordmark:     1.12rem;   /* rigi:43 */
+  --fs-page-title:   1.65rem;   /* rigi:50 */
+  --fs-page-title-mobile: 1.28rem; /* rigi:403 */
+  --fs-page-sub:     .95rem;    /* rigi:51 */
+  --fs-intro:        .875rem;   /* rigi:52 */
+  --fs-side-title:   .62rem;    /* rigi:68 */
+  --fs-side-tab:     .86rem;    /* rigi:74 */
+  --fs-analyst-name: .79rem;    /* rigi:89 */
+  --fs-analyst-email:.68rem;    /* rigi:91 */
+  --fs-side-foot:    .63rem;    /* rigi:96 */
+  --fs-banner-title: .92rem;    /* rigi:106 */
+  --fs-panel-head:   .73rem;    /* rigi:157 */
+  --fs-group-title:  .71rem;    /* rigi:164 */
+  --fs-panel-note:   .7rem;     /* rigi:161 */
+  --fs-case-note:    .74rem;    /* rigi:98 */
+  --fs-card-label:   .67rem;    /* rigi:215 */
+  --fs-card-value:   1.7rem;    /* rigi:217 */
+  --fs-table:        .75rem;    /* rigi:316 */
+  --fs-table-head:   .66rem;    /* rigi:319 */
+  --fs-table-compact:.72rem;    /* rigi:197 */
+  --fs-table-compact-head: .64rem; /* rigi:201 */
+  --fs-pill:         .68rem;    /* rigi:332 */
+  --fs-button:       .8rem;     /* rigi:261 */
+  --fs-button-outline: .77rem;  /* rigi:109 */
+  --fs-input:        .8rem;     /* rigi:308 */
+  --fs-count:        .74rem;    /* rigi:313 */
+  --fs-flag:         .72rem;    /* rigi:274 */
+  --fs-legend:       .73rem;    /* rigi:236 */
+  --fs-footer-wordmark: 1rem;   /* rigi:353 */
+  --fs-footer-names: .82rem;    /* rigi:354 */
+  --fs-footer-emails:.74rem;    /* rigi:355 */
+  --fs-footer-source:.71rem;    /* rigi:358 */
+  --fs-error:        .85rem;    /* rigi:363 */
+
+  --ls-side-title:   1.2px;     /* rigi:68 */
+  --ls-side-tab:     .2px;      /* rigi:74 */
+  --ls-panel-head:   1px;       /* rigi:158 */
+  --ls-table-head:   .6px;      /* rigi:319 */
+  --ls-card-label:   .7px;      /* rigi:215 */
+  --ls-banner-title: .7px;      /* rigi:106 */
+  --ls-pill:         .2px;      /* rigi:333 */
+  --ls-button:       .3px;      /* rigi:261 */
+
+  /* ---- Layout: sidebar, header, logo, page -------------------------------- */
+  --sidebar-w:       238px;     /* rigi:60, rigi:65 */
+  --sidebar-pad:     20px 0 18px;  /* rigi:63 */
+  --side-title-pad:  0 18px 8px;   /* rigi:69 */
+  --side-tabs-pad:   0 10px;       /* rigi:72 */
+  --side-tabs-gap:   2px;          /* rigi:72 */
+  --side-tab-pad:    11px 14px;    /* rigi:77 */
+  --side-tab-bar:    3px;          /* rigi:76 left accent bar width */
+  --side-tab-radius: 0 4px 4px 0;  /* rigi:76 */
+  --side-analysts-gap-top: 26px;   /* rigi:87 */
+  --side-analysts-pad: 16px 18px 0; /* rigi:87 */
+  --side-analyst-gap: 13px;        /* rigi:88 */
+  --side-foot-pad:   14px 18px 0;  /* rigi:96 */
+
+  --header-pad:      14px 28px;    /* rigi:38 */
+  --header-pad-mobile: 11px 16px;  /* rigi:398 */
+  --header-gap:      16px;         /* rigi:38 */
+  --logo-h:          38px;         /* rigi:42 (tracker:45 has 34px; RIGI wins) */
+
+  --page-max:        1480px;       /* rigi:48 */
+  --page-pad:        24px 28px 40px; /* rigi:48 */
+  --page-pad-mobile: 18px 14px 30px; /* rigi:402 */
+  --gap-panels:      16px;         /* rigi:155 */
+  --gap-columns:     20px;         /* rigi:142 */
+
+  /* ---- Panels, cards, controls -------------------------------------------- */
+  --radius-panel:    8px;          /* rigi:154 */
+  --radius-panel-head: 7px 7px 0 0; /* rigi:158 */
+  --radius-card:     6px;          /* rigi:213 */
+  --radius-error:    5px;          /* rigi:362 */
+  --radius-control:  4px;          /* rigi:262, rigi:309 */
+  --radius-pill:     10px;         /* rigi:332 */
+  --panel-head-pad:  8px 14px;     /* rigi:158 */
+  --panel-body-pad:  14px;         /* rigi:160 */
+  --panel-note-pad:  0 14px 12px;  /* rigi:161 */
+  --card-pad:        12px 14px 13px; /* rigi:213 */
+  --card-top-bar:    3px;          /* rigi:213 */
+  --banner-shadow:   0 2px 10px rgba(0,71,103,.16); /* rigi:103 */
+  --transition:      .15s;         /* rigi:78 */
+
+  --button-pad:      8px 18px;     /* rigi:263 solid button */
+  --button-outline-pad: 6px 14px;  /* rigi:111 outline button on navy */
+  --input-pad:       7px 10px;     /* rigi:309 search box, dropdown, date picker */
+  --pill-pad:        2px 9px;      /* rigi:332 */
+  --flag-pad:        5px 10px;     /* rigi:275 */
+  --error-pad:       14px 16px;    /* rigi:361 */
+  --error-bar:       4px;          /* rigi:362 */
+  --disabled-opacity: .55;         /* rigi:266 */
+
+  /* ---- Tables ------------------------------------------------------------- */
+  --cell-pad:        7px 9px;      /* rigi:317 main table */
+  --cell-pad-compact: 5px 6px;     /* rigi:198 compact table */
+  --table-scroll-pad: 12px 14px 4px; /* rigi:315 */
+  --table-head-bg:   var(--navy);  /* rigi:319 */
+  --table-head-text: #ffffff;      /* rigi:319 */
+  --table-head-hover: var(--navy-hover); /* rigi:322 */
+  /* No zebra rows in RIGI: rows are white with a 1px var(--grid) divider (rigi:317). */
+
+  /* ---- Segmented controls and tooltips (from the tracker; RIGI has none) --- */
+  --ctrl-border:     rgba(255,255,255,.42); /* tracker:131 */
+  --ctrl-divider:    rgba(255,255,255,.3);  /* tracker:138 */
+  --ctrl-text:       rgba(255,255,255,.8);  /* tracker:134 */
+  --ctrl-hover:      rgba(255,255,255,.16); /* tracker:139 */
+  --ctrl-on-bg:      #ffffff;               /* tracker:140 (text var(--navy)) */
+  --fs-ctrl:         .68rem;                /* tracker:133 */
+  --ctrl-pad:        4px 11px;              /* tracker:135 */
+  --tip-shadow:      0 3px 12px rgba(0,32,96,.17); /* tracker:167 */
+  --tip-pad:         8px 11px 9px;          /* tracker:168 */
+  --tip-radius:      5px;                   /* tracker:166 */
+  --fs-tip:          .73rem;                /* tracker:168 */
+
+  /* ---- Footer ------------------------------------------------------------- */
+  --footer-rule:     2px solid var(--navy); /* rigi:349 */
+  --footer-pad:      20px 28px 26px;        /* rigi:350 */
+  --footer-pad-mobile: 16px 14px 20px;      /* rigi:409 */
+  --footer-gap:      5px;                   /* rigi:351 */
+
+  /* ---- Charts (RIGI draws SVG by hand; Chart.js will be styled to match) --- */
+  --chart-pad:       10px 14px 6px;  /* rigi:233 */
+  --chart-axis:      #6b7b96;        /* rigi:1128 tick labels, captions */
+  --chart-grid:      #e6ebf2;        /* rigi:1128 gridlines */
+  --chart-rule:      #c3cedb;        /* rigi:1128 zero line and x-axis */
+  --chart-ink:       #002060;        /* rigi:1126 value labels on bars */
+  --chart-label:     #31404f;        /* rigi:1367 emphasised category labels */
+  --chart-fs-tick:   10.5;           /* rigi:1328 SVG units */
+  --chart-fs-caption: 10;            /* rigi:1330 SVG units, bold */
+  --chart-fs-category: 11;           /* rigi:1367 SVG units */
+  --chart-fs-value:  12;             /* rigi:1352 SVG units, bold */
+  --chart-series-1:  #002060;        /* rigi:1122 */
+  --chart-series-2:  #95C7F9;        /* rigi:1124 */
+  --chart-series-neg: #A73444;       /* rigi:1125 */
+  --chart-series-base: #9AB0BE;      /* rigi:1127 */
+  --legend-swatch:   11px;           /* rigi:238 */
+  --legend-gap:      18px;           /* rigi:236 */
+
+  /* ---- Equity Flows investor types (SPEC §5.6) ---------------------------- */
+  --flow-pension:    #002060;   /* RIGI --navy rigi:14 (note uses #002B55) */
+  --flow-foreign:    #95C7F9;   /* RIGI --navy-mid rigi:16 (note uses #95CAFF) */
+  --flow-retail:     #A73444;   /* RIGI --maroon rigi:18 (note uses the same) */
+  --flow-brokers:    #606060;   /* flows (no RIGI equivalent) */
+  --flow-mutual:     #828282;   /* flows (no RIGI equivalent) */
+  --flow-corporate:  #AAAAAA;   /* flows (no RIGI equivalent) */
+
+  /* ---- APPROVED (Q3, 16 Sep 2026): needed for Colombia, in neither reference */
+  --rating-buy:      #1A7A4C;   /* APPROVED mapping; colour rigi:19, pill shape rigi:331-334 */
+  --rating-neutral:  #8a97a8;   /* APPROVED mapping; colour rigi:336 */
+  --rating-sell:     #A73444;   /* APPROVED mapping; colour rigi:337 */
+  --rating-tbd:      #6b7b96;   /* APPROVED: dashed outline + text; rigi:25, dashed style rigi:274 */
+  --sector-band-bg:  #00306e;   /* APPROVED: RIGI hover navy rigi:322 */
+  --sector-band-text: #ffffff;  /* APPROVED: as table header rigi:319 */
+  --chip-bg:         #cfdcee;   /* APPROVED: rigi:17 */
+  --chip-text:       #002060;   /* APPROVED: rigi:14 */
+  --status-ok:       #4FBE8B;   /* APPROVED mapping; colour rigi:133 */
+  --status-stale:    #FFC000;   /* APPROVED NEW COLOUR: no amber in either reference */
+  --status-error:    #A73444;   /* APPROVED mapping; colour rigi:18 */
+  --info-bg:         #eef3fa;   /* APPROVED placeholder banner fill; colour rigi:327 */
+  --strip-rule:      2px solid var(--navy); /* APPROVED header-strip underline; rigi:349 */
+
+  /* ---- Stage 3: mobile menu drawer (menu button approved, DESIGN_NOTES §8 Q4) ---- */
+  --menu-backdrop:   rgba(0,0,0,.35);            /* no reference value: dims the page behind the open menu */
+  --menu-shadow:     4px 0 18px rgba(0,0,0,.25); /* no reference value: edge of the open menu */
+}

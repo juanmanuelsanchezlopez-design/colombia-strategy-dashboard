@@ -1,0 +1,4 @@
+# GENERATED FILE: do not edit here. Written by run\4_publish_website.bat from the project's
+# scripts/requirements.txt: the Python packages GitHub's price updates need.
+yfinance==1.7.0
+pandas==3.0.5

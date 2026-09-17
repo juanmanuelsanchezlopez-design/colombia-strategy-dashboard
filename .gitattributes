@@ -1,0 +1,6 @@
+# Published as .gitattributes in the website repository on GitHub (deploy/ in the project; DECISIONS D21).
+# Same line endings on Windows and on GitHub's machines, so files don't look changed when they aren't.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.ico binary

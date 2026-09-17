@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Colombia Strategy Dashboard | BTG Pactual Research</title>
+<meta name="description" content="BTG Pactual Equity Research: Colombia coverage, valuation, stock performance and equity flows.">
+<link rel="icon" type="image/png" href="assets/BTG_FAVICON.png">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+<!--
+  Colombia Strategy Dashboard. Layout copied from the RIGI dashboard (docs/DESIGN_NOTES.md).
+  The page is filled in by js/app.js from data/btg_data.js (BTG inputs, published from the Excel workbook)
+  and data/market_data.js (Yahoo Finance prices). Nothing on this page is typed by hand.
+-->
+<a class="skip-link" href="#main">Skip to content</a>
+
+<aside class="sidebar" id="sidebar" aria-label="Dashboard navigation">
+  <div class="side-title" id="sideTitle">Colombia Strategy Dashboard</div>
+  <nav class="tabs" role="tablist" aria-label="Dashboard sections" id="tabs"></nav>
+  <div class="side-analysts" id="analysts">
+    <div class="side-title">Analysts</div>
+  </div>
+  <div class="side-foot">BTG Pactual Equity Research</div>
+</aside>
+<div class="menu-backdrop" id="menuBackdrop" hidden></div>
+
+<header class="header">
+  <button type="button" class="menu-button" id="menuButton" aria-controls="sidebar" aria-expanded="false"
+          aria-label="Open the menu">&#9776;</button>
+  <a class="header-brand" id="logoLink" href="https://www.btgpactual.com/research/latest-documents" target="_blank"
+     rel="noopener" aria-label="BTG Pactual Research portal (opens in a new tab)">
+    <img src="assets/btg-logo.png" alt="BTG Pactual" class="header-logo"
+         onerror="this.hidden=true; this.nextElementSibling.hidden=false;">
+    <span class="header-wordmark" hidden>BTG Pactual</span>
+  </a>
+  <div>
+    <h1 id="siteTitle">Colombia Strategy Dashboard</h1>
+    <span class="subtitle">Colombia Strategy &mdash; BTG Pactual Research</span>
+  </div>
+</header>
+
+<main class="page" id="main" tabindex="-1">
+  <noscript>
+    <div class="load-error">This dashboard needs JavaScript. Please enable it and reload the page.</div>
+  </noscript>
+  <div class="load-error" id="loadError" hidden></div>
+  <div id="view"></div>
+</main>
+
+<footer class="footer" id="footer">
+  <span class="footer-wordmark">BTG Pactual</span>
+  <div class="footer-signatures" id="footerNames"></div>
+  <div class="footer-emails" id="footerEmails"></div>
+  <div class="footer-source">
+    Prices: Yahoo Finance (may be delayed). Estimates, ratings and target prices: BTG Pactual. Flows: BVC and BTG Pactual.
+  </div>
+  <div class="footer-source" id="footerDisclaimer"></div>
+  <div class="footer-status" id="footerStatus"></div>
+</footer>
+
+<div class="tip" id="tip" role="tooltip" hidden></div>
+
+<script src="data/btg_data.js"></script>
+<script src="data/market_data.js"></script>
+<script src="js/format.js"></script>
+<script src="js/calc.js"></script>
+<script src="js/tab_stock_info.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

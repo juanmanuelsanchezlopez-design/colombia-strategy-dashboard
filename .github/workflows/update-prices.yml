@@ -1,0 +1,111 @@
+# GENERATED FILE on GitHub: do not edit it there. Its home is deploy/update-prices.yml in the
+# Colombia Strategy Dashboard project; run\4_publish_website.bat copies it to
+# .github/workflows/update-prices.yml and overwrites any change made on GitHub. DECISIONS D21.
+#
+# What it does (all free on a public repository)
+#   - Every 10 minutes in market hours (Mon-Fri, 08:03-16:33 Bogotá): downloads the latest prices and FX
+#     from Yahoo Finance and republishes the website with them (GitHub Pages).
+#   - Every weekday at 17:45 Bogotá: downloads the full 5-year history (dividends included), saves it in
+#     this repository (the next day's updates start from it) and republishes the website.
+#   - Whenever the website is published from Juan's computer: latest prices, then publish.
+#   - "Run workflow" on the Actions page does the same by hand (tick the box for the full history).
+# GitHub can start scheduled runs a few minutes late when it is busy. If Yahoo fails, the website keeps
+# the prices it had and shows their time.
+
+name: Update prices and publish the website
+
+on:
+  schedule:
+    - cron: "3-59/10 13-20 * * 1-5"   # 08:03-15:53 Bogotá (UTC-5, no daylight saving)
+    - cron: "3-33/10 21 * * 1-5"      # 16:03-16:33 Bogotá: closing prices
+    - cron: "45 22 * * 1-5"           # 17:45 Bogotá: full history (keep in step with FULL below)
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      full_history:
+        description: "Download the full 5-year history (otherwise only the latest prices)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: website
+  cancel-in-progress: false
+
+jobs:
+  prices:
+    name: Update prices
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: write               # to save the daily full history in the repository
+    env:
+      PYTHONIOENCODING: utf-8
+      FULL: ${{ (github.event.schedule == '45 22 * * 1-5' || inputs.full_history == true) && 'true' || 'false' }}
+    outputs:
+      publish: ${{ steps.fetch.outcome == 'success' || github.event_name != 'schedule' }}
+    steps:
+      - name: Get the website files
+        uses: actions/checkout@v7
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements.txt
+
+      - name: Install the Python packages
+        run: pip install -r scripts/requirements.txt
+
+      # A failed 10-minute update is not an error for GitHub (the website keeps its prices);
+      # a failed full-history download is, so GitHub emails the owner once that day.
+      - name: Download prices from Yahoo Finance
+        id: fetch
+        continue-on-error: ${{ env.FULL != 'true' }}
+        run: |
+          if [ "$FULL" = "true" ]; then
+            python scripts/fetch_market_data.py --full
+          else
+            python scripts/fetch_market_data.py --quotes-only
+          fi
+
+      - name: Save the full history in the repository
+        if: steps.fetch.outcome == 'success' && steps.fetch.outputs.mode == 'full'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/data/market_data.js
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -q -m "Price history, $(TZ=America/Bogota date '+%d %b %Y, %H:%M') (Bogotá)"
+          for attempt in 1 2 3; do
+            if git pull -q --rebase origin main && git push -q origin HEAD:main; then exit 0; fi
+            sleep 10
+          done
+          exit 1
+
+      - name: Package the website
+        if: steps.fetch.outcome == 'success' || github.event_name != 'schedule'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  publish:
+    name: Publish the website
+    needs: prices
+    if: needs.prices.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - name: Publish on GitHub Pages
+        id: deploy
+        uses: actions/deploy-pages@v5

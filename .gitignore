@@ -1,0 +1,6 @@
+# Published as .gitignore in the website repository on GitHub (deploy/ in the project; DECISIONS D21).
+# Files the price updates create on GitHub's machines that must not be saved in the repository.
+audit/
+__pycache__/
+*.pyc
+*.tmp
