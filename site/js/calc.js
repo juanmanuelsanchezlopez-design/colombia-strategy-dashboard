@@ -12,7 +12,7 @@
 
    Works in the browser (window.Calc) and in Node for the tests and the publishing checks (require).
    Stage 3: SPEC §8.1 (market cap), §8.4 (upside, DPS). Stage 4: §8.2 (price basis), §8.3 (multiples).
-   Stage 5: §8.5 (price and total returns, local and US$).
+   Stage 5: §8.5 (price and total returns, local and US$). Stage 6: §8.7 (equity flows).
    ============================================================================= */
 (function (root, factory) {
   var Calc = factory();
@@ -514,6 +514,166 @@
     };
   }
 
+  /* ===========================================================================
+     Stage 6 — Equity Flows (SPEC §8.7, §9.4; annual from months, DECISIONS D18)
+     All values US$mn, net (positive = net purchase). Months are "YYYY-MM".
+     =========================================================================== */
+
+  /* The month k months after ym (k may be negative). */
+  function addMonths(ym, k) {
+    var y = +ym.slice(0, 4), m = +ym.slice(5, 7) - 1 + k;
+    y += Math.floor(m / 12);
+    m = ((m % 12) + 12) % 12;
+    return y + '-' + (m < 9 ? '0' : '') + (m + 1);
+  }
+
+  /* The n months ending with (and including) endMonth, oldest first. */
+  function monthsEnding(endMonth, n) {
+    var out = [], k;
+    for (k = n - 1; k >= 0; k--) { out.push(addMonths(endMonth, -k)); }
+    return out;
+  }
+
+  function byMonth(monthly) {
+    var map = {};
+    (monthly || []).forEach(function (r) { map[r.month] = r; });
+    return map;
+  }
+
+  /* Chart 1 — monthly net flows for the n months ending endMonth (13 in SPEC §8.7). A missing month has values null. */
+  function monthlyFlows(monthly, endMonth, n) {
+    var map = byMonth(monthly);
+    return monthsEnding(endMonth, n || 13).map(function (m) {
+      return { month: m, values: map[m] ? map[m].values : null };
+    });
+  }
+
+  /* Chart 2 — L12M monthly average per investor type: the sum of the 12 months ending endMonth ÷ 12.
+     n.a. with needs = months missing when any of the 12 months has no data. */
+  function averageFlows(monthly, endMonth, investors) {
+    var rows = monthlyFlows(monthly, endMonth, 12);
+    var missing = rows.filter(function (r) { return !r.values; }).length;
+    if (missing) { return na('needs ' + missing + ' more month' + (missing === 1 ? '' : 's') + ' of data', { needs: missing }); }
+    var values = {};
+    investors.forEach(function (id) {
+      values[id] = rows.reduce(function (s, r) { return s + (isNum(r.values[id]) ? r.values[id] : 0); }, 0) / 12;
+    });
+    return ok(values, { months: rows.map(function (r) { return r.month; }) });
+  }
+
+  /* Chart 3 — annual cumulative flows: per calendar year, the sum of its months up to endMonth, from firstYear
+     (2016) to endMonth's year. The last year is year to date; a closed year with fewer than 12 months is flagged
+     (complete = false) and still shows the sum of the months it has. */
+  function annualFlows(monthly, endMonth, investors, firstYear) {
+    var lastYear = +endMonth.slice(0, 4), out = [], y;
+    for (y = firstYear; y <= lastYear; y++) {
+      var months = (monthly || []).filter(function (r) { return +r.month.slice(0, 4) === y && r.month <= endMonth; });
+      var expected = y === lastYear ? +endMonth.slice(5, 7) : 12;
+      var values = {};
+      investors.forEach(function (id) {
+        values[id] = months.reduce(function (s, r) { return s + (isNum(r.values[id]) ? r.values[id] : 0); }, 0);
+      });
+      out.push({ year: y, ytd: y === lastYear, months: months.length, expected: expected,
+                 complete: months.length === expected, values: months.length ? values : null });
+    }
+    return out;
+  }
+
+  /* Table 1 — asset allocation by investor type for one month: US$mn per sector, the total (sum of sectors),
+     and % = value ÷ the row total (n.m. when the total is zero). A missing row is n.a. */
+  function allocationTable(allocation, month, investors, sectors) {
+    var rows = {};
+    (allocation || []).forEach(function (r) { if (r.month === month) { rows[r.investor_type] = r; } });
+    return investors.map(function (id) {
+      var r = rows[id];
+      if (!r) { return { investor: id, status: 'na', values: null, total: null, pct: null }; }
+      var total = sectors.reduce(function (s, k) { return s + (isNum(r.values[k]) ? r.values[k] : 0); }, 0);
+      var pct = {};
+      sectors.concat(['TOTAL']).forEach(function (k) {
+        var v = k === 'TOTAL' ? total : r.values[k];
+        pct[k] = !isNum(v) ? na('blank') : Math.abs(total) < 1e-9 ? nm('total is zero') : ok(v / total);
+      });
+      return { investor: id, status: 'ok', values: r.values, total: total, pct: pct };
+    });
+  }
+
+  var WINDOW_MONTHS = { M: 1, L3M: 3, L6M: 6, L12M: 12 };
+
+  /* Tables 2–7 — top 5 net purchases and net sales for one investor type and window (M, L3M, L6M, L12M)
+     ending month:
+       1. add up Flows_BySecurity per nemo over the window's months;
+       2. keep nemos marked include_in_top5 = Y in Flows_SecurityMap (unmapped nemos are left out);
+       3. purchases = the 5 largest positive sums, sales = the 5 most negative (ties: nemo A–Z);
+       4. values are shown to 1 decimal (ranking uses the unrounded sums).
+     Flows_Top5_Override rows for (month, window, investor) replace the result (status "manual").
+     When the window's months are not all in Flows_BySecurity: n.a. with needs = months missing. */
+  function topFive(bySecurity, securityMap, overrides, month, window, investor) {
+    var manual = (overrides || []).filter(function (o) { return o.month === month && o.window === window && o.investor_type === investor; });
+    if (manual.length) {
+      var pick = function (side) {
+        return manual.filter(function (o) { return o.side === side; })
+          .sort(function (a, b) { return a.rank - b.rank; })
+          .map(function (o) { return { nemo: o.nemo, value: o.usd_mn }; });
+      };
+      return { status: 'manual', value: null, buys: pick('BUY'), sells: pick('SELL') };
+    }
+    var months = monthsEnding(month, WINDOW_MONTHS[window]);
+    var present = {};
+    (bySecurity || []).forEach(function (r) { present[r.month] = true; });
+    var missing = months.filter(function (m) { return !present[m]; }).length;
+    if (missing) {
+      return na('needs ' + missing + ' more month' + (missing === 1 ? '' : 's') + ' of data', { needs: missing, buys: [], sells: [] });
+    }
+    var include = {};
+    (securityMap || []).forEach(function (s) { include[s.nemo] = s.include_in_top5 === 'Y'; });
+    var sums = {}, inWindow = {};
+    months.forEach(function (m) { inWindow[m] = true; });
+    (bySecurity || []).forEach(function (r) {
+      if (!inWindow[r.month] || !include[r.nemo] || !isNum(r.values[investor])) { return; }
+      sums[r.nemo] = (sums[r.nemo] || 0) + r.values[investor];
+    });
+    var list = Object.keys(sums).map(function (n) { return { nemo: n, value: sums[n] }; });
+    var byName = function (a, b) { return a.nemo < b.nemo ? -1 : a.nemo > b.nemo ? 1 : 0; };
+    var buys = list.filter(function (x) { return x.value > 0; }).sort(function (a, b) { return b.value - a.value || byName(a, b); }).slice(0, 5);
+    var sells = list.filter(function (x) { return x.value < 0; }).sort(function (a, b) { return a.value - b.value || byName(a, b); }).slice(0, 5);
+    return ok(null, { buys: buys, sells: sells, months: months });
+  }
+
+  /* Table 8 — asset allocation by security for one month: every nemo in Flows_BySecurity (A–Z), each investor
+     type's net flow and the row total (sum across investor types). For a company with more than one nemo in
+     Flows_SecurityMap (e.g. CIBEST and PFCIBEST), a combined "PF & ORD" row adds its lines up and follows the
+     ordinary line (the nemo not starting with PF), as in the note. The bottom totals add the individual lines only. */
+  function securityTable(bySecurity, securityMap, month, investors) {
+    var rows = (bySecurity || []).filter(function (r) { return r.month === month; })
+      .sort(function (a, b) { return a.nemo < b.nemo ? -1 : a.nemo > b.nemo ? 1 : 0; });
+    var companyOf = {}, members = {};
+    (securityMap || []).forEach(function (s) {
+      if (s.company_id) { companyOf[s.nemo] = s.company_id; (members[s.company_id] = members[s.company_id] || []).push(s.nemo); }
+    });
+    var sum = function (vals) {
+      return investors.reduce(function (s, id) { return s + (isNum(vals[id]) ? vals[id] : 0); }, 0);
+    };
+    var out = [], totals = {}, seen = {};
+    investors.forEach(function (id) { totals[id] = 0; });
+    rows.forEach(function (r) {
+      out.push({ nemo: r.nemo, combined: false, values: r.values, total: sum(r.values) });
+      investors.forEach(function (id) { totals[id] += isNum(r.values[id]) ? r.values[id] : 0; });
+      var c = companyOf[r.nemo];
+      if (!c || members[c].length < 2 || seen[c]) { return; }
+      var lines = rows.filter(function (x) { return companyOf[x.nemo] === c; });
+      var ordinary = lines.filter(function (x) { return x.nemo.indexOf('PF') !== 0; })[0] || lines[0];
+      if (lines.length < 2 || ordinary !== r) { return; }
+      seen[c] = true;
+      var values = {};
+      investors.forEach(function (id) {
+        values[id] = lines.reduce(function (s, x) { return s + (isNum(x.values[id]) ? x.values[id] : 0); }, 0);
+      });
+      out.push({ nemo: ordinary.nemo + ' PF & ORD', combined: true, lines: lines.map(function (x) { return x.nemo; }),
+                 values: values, total: sum(values) });
+    });
+    return { rows: out, totals: totals, total: sum(totals) };
+  }
+
   return {
     perUsd: perUsd,
     convert: convert,
@@ -539,6 +699,14 @@
     lineReturn: lineReturn,
     eventsSpanned: eventsSpanned,
     checkCustomRange: checkCustomRange,
-    performance: performance
+    performance: performance,
+    addMonths: addMonths,
+    monthsEnding: monthsEnding,
+    monthlyFlows: monthlyFlows,
+    averageFlows: averageFlows,
+    annualFlows: annualFlows,
+    allocationTable: allocationTable,
+    topFive: topFive,
+    securityTable: securityTable
   };
 }));

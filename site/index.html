@@ -3,6 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Keep the site out of search engines: the link works for anyone it is sent to, but it is not listed (Juan, 17 Sep 2026, DECISIONS D24). -->
+<meta name="robots" content="noindex, nofollow, noarchive">
 <title>Colombia Strategy Dashboard | BTG Pactual Research</title>
 <meta name="description" content="BTG Pactual Equity Research: Colombia coverage, valuation, stock performance and equity flows.">
 <link rel="icon" type="image/png" href="assets/BTG_FAVICON.png">
@@ -63,6 +65,10 @@
 
 <div class="tip" id="tip" role="tooltip" hidden></div>
 
+<!-- Chart.js 4.5.1 for the Equity Flows charts (DECISIONS D3); the integrity hash makes the browser refuse a changed file. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.5.1/chart.umd.min.js"
+        integrity="sha512-WoViKhKD4qI2WruSZqv9+kvM4WfFhUMQCLN4QlDTt5aU56fLQy2gYoxWIqlEnXqJy/+Ac5q/hk1oWfqnMDhwMA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <script src="data/btg_data.js"></script>
 <script src="data/market_data.js"></script>
 <script src="js/format.js"></script>
@@ -70,6 +76,7 @@
 <script src="js/tab_stock_info.js"></script>
 <script src="js/tab_valuation.js"></script>
 <script src="js/tab_performance.js"></script>
+<script src="js/tab_flows.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

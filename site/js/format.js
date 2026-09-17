@@ -113,12 +113,32 @@
     return m ? MONTHS[Number(m[2]) - 1] + ' ' + m[1] : 'n.a.';
   }
 
+  /* Equity Flows labels: "2025-08" -> "Aug 25" (chart axis) and "August 2026" (table blocks). */
+  var MONTHS_LONG = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September',
+                     'October', 'November', 'December'];
+  function monthShort(ym) {
+    var m = /^(\d{4})-(\d{2})$/.exec(String(ym || ''));
+    return m ? MONTHS[Number(m[2]) - 1] + ' ' + m[1].slice(2) : 'n.a.';
+  }
+  function monthLong(ym) {
+    var m = /^(\d{4})-(\d{2})$/.exec(String(ym || ''));
+    return m ? MONTHS_LONG[Number(m[2]) - 1] + ' ' + m[1] : 'n.a.';
+  }
+
+  /* Accounting style, as in the flows note: negatives in parentheses. -49.1 -> "(49.1)"; values that round to 0 -> "0.0". */
+  function paren(v, dp) {
+    if (!isNum(v)) { return 'n.a.'; }
+    var s = num(Math.abs(v), dp);
+    return v < 0 && Number(s.replace(/,/g, '')) !== 0 ? '(' + s + ')' : s;
+  }
+
   /* Year column label: the actual year plain, estimate years with E (2026E). */
   function yearLabel(year, actualYear) { return year > actualYear ? year + 'E' : String(year); }
 
   return {
     num: num, ccyLabel: ccyLabel, price: price, dps: dps, pct: pct, copTn: copTn, usdMn: usdMn,
     multiple: multiple, percent: percent, finUnit: finUnit, finAmount: finAmount,
-    result: result, date: date, dateTime: dateTime, time: time, localDate: localDate, month: month, yearLabel: yearLabel, MINUS: MINUS
+    result: result, date: date, dateTime: dateTime, time: time, localDate: localDate, month: month,
+    monthShort: monthShort, monthLong: monthLong, paren: paren, yearLabel: yearLabel, MINUS: MINUS
   };
 }));

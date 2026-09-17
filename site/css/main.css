@@ -309,3 +309,38 @@ table.data.valuation thead tr.year-row th .sort-btn { justify-content: flex-end;
 .btn-small { padding: var(--button-outline-pad); font-size: var(--fs-button-outline); }
 .range-error { font-size: var(--fs-count); color: var(--maroon); font-weight: var(--fw-semibold); }
 .range-error:empty { display: none; }
+
+/* ---------- Equity Flows (SPEC §9.4; note pages 3–6; charts per DESIGN_NOTES §7) ---------- */
+.flows-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 14px; }
+.flows-bar .count { margin-left: 0; white-space: normal; }
+.chart-scroll { overflow-x: auto; padding: var(--chart-pad); }
+.chart-box { position: relative; width: 100%; }
+.chart-box .empty { padding-top: 60px; }
+.flows-pair { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--gap-panels); margin-top: var(--gap-panels); }
+@media (min-width: 1280px) {                                          /* side by side, as in the note, only when each chart has room */
+  .flows-pair { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.flows-pair .panel + .panel { margin-top: 0; }
+.flows-pair + .panel { margin-top: var(--gap-panels); }
+table.data tr.flows-head th {
+  background: var(--table-head-bg); color: var(--table-head-text); font-size: var(--fs-table-head);
+  letter-spacing: var(--ls-table-head); text-transform: uppercase; font-weight: var(--fw-bold);
+}
+table.data tr.combined td { background: var(--row-detail); }
+.top5-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--gap-panels); margin-top: var(--gap-panels); }
+.top5-grid .panel + .panel { margin-top: 0; }
+table.data.top5-table td.split, table.data.top5-table th.split { border-left: 1px solid var(--border-firm); }
+table.data.top5-table td:first-child { position: static; border-right: none; }
+table.data.top5-table thead th:first-child { position: static; }
+.manual-pill {
+  display: inline-block; margin-left: 8px; padding: 0 7px; border-radius: var(--radius-pill); font-size: var(--fs-pill);
+  letter-spacing: 0; text-transform: none; background: var(--chip-bg); color: var(--chip-text); font-weight: var(--fw-bold);
+}
+.flows-note { font-size: var(--fs-panel-note); color: var(--text-muted); margin: 8px 2px var(--gap-panels); line-height: 1.5; }
+@media (max-width: 900px) {
+  .top5-grid { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 768px) {
+  .chart-box { min-width: 760px; }                                   /* rigi:413-414: charts scroll sideways */
+}
+

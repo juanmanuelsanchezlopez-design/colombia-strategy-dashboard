@@ -40,8 +40,8 @@
       intro: 'P/E, EV/EBITDA, P/BV, net debt/EBITDA, ROE and dividend yield for BTG Pactual’s Colombia coverage, for the last reported year and the estimate years.' },
     { id: 'performance', label: 'Stock Performance', strip: 'Stock performance', module: 'TabPerformance',
       intro: '1D, MTD, YTD, 1Y and custom-range returns for BTG Pactual’s Colombia coverage: price or total return, in local currency or US$.' },
-    { id: 'flows', label: 'Equity Flows', strip: 'Equity flows', stage: 6,
-      what: 'Monthly BVC flows by investor type, allocation by sector, and the top 5 net purchases and sales.' }
+    { id: 'flows', label: 'Equity Flows', strip: 'Equity flows', module: 'TabFlows',
+      intro: 'Monthly BVC equity flows by investor type: buyers and sellers, allocation by sector, the top 5 net purchases and sales, and flows by security.' }
   ];
 
   // This computer (file opened directly, or a local test server) rather than the published website.
