@@ -291,3 +291,9 @@ table.data td.label-cell { color: var(--text-body); }
 /* ---------- Stock Information details ---------- */
 table.data tr.band td:first-child { position: static; }
 table.data tr.band .band-label { position: sticky; left: 9px; }
+
+/* ---------- Valuation Tracker (SPEC §9.2; grouped header after valuation_table_reference.png) ---------- */
+table.data.valuation thead tr.group-row th.group-head { text-align: center; border-bottom-color: var(--on-navy-16); }
+table.data.valuation thead th.group-start { border-left: 1px solid var(--on-navy-40); }
+table.data.valuation thead tr.year-row th:first-child { position: sticky; left: auto; border-right: none; z-index: 2; }
+table.data.valuation thead tr.year-row th .sort-btn { justify-content: flex-end; }

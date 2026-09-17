@@ -41,6 +41,21 @@
     return (rounded > 0 ? '+' : '') + num(v * 100, d) + '%';
   }
 
+  /* Valuation display (SPEC §8.3): multiples 1 decimal + "x"; ROE and yield 1 decimal + "%", no plus sign. */
+  function multiple(v) { return isNum(v) ? num(v, 1) + 'x' : 'n.a.'; }
+  function percent(v) { return isNum(v) ? num(v * 100, 1) + '%' : 'n.a.'; }
+
+  /* A company's reporting unit (Companies fin_unit) in words: "COP bn", "US$mn", "CAD mn". */
+  function finUnit(unit) { return { COP_bn: 'COP bn', USD_mn: 'US$mn', CAD_mn: 'CAD mn' }[unit] || String(unit); }
+
+  /* An amount in a reporting unit, 1 decimal: "COP 5,100.0bn", "US$812.4mn". */
+  function finAmount(v, unit) {
+    if (!isNum(v)) { return 'n.a.'; }
+    var s = num(Math.abs(v), 1);
+    var sign = v < 0 && Number(s.replace(/,/g, '')) !== 0 ? MINUS : '';
+    return sign + (unit === 'COP_bn' ? 'COP ' + s + 'bn' : unit === 'USD_mn' ? 'US$' + s + 'mn' : unit === 'CAD_mn' ? 'CAD ' + s + 'mn' : s);
+  }
+
   function copTn(v) { return num(v, 1); }            // Mkt cap (COP tn), 1 decimal
   function usdMn(v) { return num(v, 0); }            // Mkt cap (US$mn), 0 decimals
 
@@ -97,6 +112,7 @@
 
   return {
     num: num, ccyLabel: ccyLabel, price: price, dps: dps, pct: pct, copTn: copTn, usdMn: usdMn,
+    multiple: multiple, percent: percent, finUnit: finUnit, finAmount: finAmount,
     result: result, date: date, dateTime: dateTime, time: time, month: month, yearLabel: yearLabel, MINUS: MINUS
   };
 }));

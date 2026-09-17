@@ -10,15 +10,8 @@
 (function () {
   'use strict';
 
-  var RATING_ORDER = { Buy: 0, Neutral: 1, Sell: 2, TBD: 3 };
-  var PLACEHOLDER_TIP = 'Placeholder from Yahoo Finance — not a BTG Pactual estimate.';
   var SHARES_TIP = 'Uses a share count from Yahoo Finance (placeholder), not a figure verified by BTG Pactual.';
   var ui = { sector: 'ALL', q: '', showAll: null, sort: null, dir: 1 };   // kept while switching tabs
-
-  function deaccent(s) {
-    s = String(s || '');
-    return (s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s).toLowerCase();
-  }
 
   // ---------------------------------------------------------------------------
   // Model: one row per company (primary line) or per share line
@@ -75,9 +68,9 @@
 
   function sortValue(r, key) {
     switch (key) {
-      case 'name': return deaccent(r.name);
+      case 'name': return App.deaccent(r.name);
       case 'ticker': return r.line.line_id;
-      case 'rating': return RATING_ORDER[r.line.rating];
+      case 'rating': return App.ratingOrder(r.line.rating);
       case 'tp': return r.tp;
       case 'price': return r.price;
       case 'upside': return r.upside.status === 'ok' ? r.upside.value : null;
@@ -89,43 +82,14 @@
   }
 
   function sortRows(rows) {
-    if (!ui.sort) { return rows; }
-    return rows.slice().sort(function (a, b) {
-      var x = sortValue(a, ui.sort), y = sortValue(b, ui.sort);
-      if (x === null || x === undefined) { return (y === null || y === undefined) ? 0 : 1; }   // n.a. always last
-      if (y === null || y === undefined) { return -1; }
-      return (typeof x === 'string' ? x.localeCompare(y) : x - y) * ui.dir;
-    });
+    return ui.sort ? App.sortRows(rows, function (r) { return sortValue(r, ui.sort); }, ui.dir) : rows;
   }
 
   // ---------------------------------------------------------------------------
   // Cells
   // ---------------------------------------------------------------------------
-  function mark(tip) { return '<span class="mark"' + App.tip(tip) + ' aria-label="' + App.esc(tip) + '">◦</span>'; }
-  function ccy(code) { return '<span class="ccy">' + App.esc(Fmt.ccyLabel(code)) + '</span>'; }
-
-  function pill(l) {
-    var cls = { Buy: 'pill-buy', Neutral: 'pill-neutral', Sell: 'pill-sell' }[l.rating] || 'pill-tbd';
-    var placeholder = l.rating !== 'TBD' && l.rating_tp_source === 'PLACEHOLDER';
-    return '<span class="pill ' + cls + (placeholder ? ' placeholder-pill' : '') + '">' + App.esc(l.rating) + '</span>' +
-           (placeholder ? mark('Rating not yet confirmed as BTG Pactual’s (source is PLACEHOLDER).') : '');
-  }
-
-  function priceCell(r) {
-    var l = r.line, m = r.market;
-    if (r.price === null) {
-      return 'n.a.' + '<span class="error-mark"' + App.tip('No price from Yahoo Finance' + (m && m.status_note ? ': ' + m.status_note : '.')) + '></span>';
-    }
-    var tip = App.audit && m ? 'Last trade ' + (m.last_trade_time ? Fmt.dateTime(m.last_trade_time) + ' (Bogotá)' : Fmt.date(m.last_trade_date)) +
-      '\nSource: Yahoo Finance ' + l.yahoo_ticker : '';
-    var html = '<span' + App.tip(tip) + '>' + Fmt.price(r.price, l.listing_currency) + '</span>' + ccy(l.listing_currency);
-    if (m && m.status === 'stale') {
-      html += '<span class="stale-mark"' + App.tip('Last trade: ' + Fmt.date(m.last_trade_date)) + ' aria-label="Last trade: ' + App.esc(Fmt.date(m.last_trade_date)) + '"></span>';
-    } else if (m && m.status === 'error') {
-      html += '<span class="error-mark"' + App.tip('The last refresh failed for this share: ' + (m.status_note || 'no detail')) + '></span>';
-    }
-    return html;
-  }
+  var mark = function (tip) { return App.mark(tip); };
+  var ccy = function (code) { return App.ccy(code); };
 
   function tpCell(r) {
     var l = r.line;
@@ -154,7 +118,7 @@
     var cur = r.line.listing_currency;
     if (r.dps.status !== 'ok') { return 'n.a.'; }
     var text = Fmt.dps(r.dps.value, cur);
-    return (r.dpsPlaceholder ? '<span class="placeholder">' + text + '</span>' + mark(PLACEHOLDER_TIP) : text) + ccy(cur);
+    return (r.dpsPlaceholder ? '<span class="placeholder">' + text + '</span>' + mark(App.PLACEHOLDER_TIP) : text) + ccy(cur);
   }
 
   function capWorking(cap, unit) {
@@ -227,9 +191,9 @@
         html += '<tr class="row">' +
           '<td class="company">' + App.esc(r.name) + '</td>' +
           '<td>' + App.esc(r.line.line_id) + '</td>' +
-          '<td>' + pill(r.line) + '</td>' +
+          '<td>' + App.ratingPill(r.line) + '</td>' +
           '<td class="num">' + tpCell(r) + '</td>' +
-          '<td class="num">' + priceCell(r) + '</td>' +
+          '<td class="num">' + App.priceCell(r.line, r.market, r.price) + '</td>' +
           '<td class="num">' + upsideCell(r) + '</td>' +
           '<td class="num">' + dpsCell(r) + '</td>' +
           '<td class="num">' + capCell(r.cap, 'cop') + '</td>' +
@@ -262,11 +226,11 @@
   }
 
   function filterRows(rows) {
-    var q = deaccent(ui.q).trim();
+    var q = App.deaccent(ui.q).trim();
     return rows.filter(function (r) {
       if (ui.sector !== 'ALL' && r.sector !== ui.sector) { return false; }
       if (!q) { return true; }
-      return deaccent(r.company.company_name + ' ' + r.line.display_label + ' ' + r.line.line_id).indexOf(q) >= 0;
+      return App.deaccent(r.company.company_name + ' ' + r.line.display_label + ' ' + r.line.line_id).indexOf(q) >= 0;
     });
   }
 
@@ -282,7 +246,7 @@
              (r.line.rating !== 'TBD' && r.line.rating_tp_source === 'PLACEHOLDER');
     });
     host.querySelector('#siBanner').innerHTML = placeholders
-      ? A.banner('info', 'Some figures are Yahoo Finance placeholders, not BTG Pactual estimates. They are marked ◦.') : '';
+      ? A.banner('info', App.PLACEHOLDER_BANNER) : '';
     host.querySelectorAll('[data-sector]').forEach(function (b) {
       b.setAttribute('aria-pressed', b.getAttribute('data-sector') === ui.sector ? 'true' : 'false');
     });
@@ -292,10 +256,7 @@
   function render(host, A) {
     if (ui.showAll === null) { ui.showAll = A.btg.config.share_display_mode === 'all_lines'; }
     var fx = A.fx();
-    var chips = ['ALL'].concat(A.btg.sectors).map(function (s) {
-      return '<button type="button" class="ctrl" data-sector="' + A.esc(s) + '" aria-pressed="false">' +
-             A.esc(s === 'ALL' ? 'All sectors' : s) + '</button>';
-    }).join('');
+    var chips = App.sectorChips();
     host.innerHTML =
       '<div id="siBanner"></div>' +
       '<section class="panel" aria-labelledby="siTitle">' +

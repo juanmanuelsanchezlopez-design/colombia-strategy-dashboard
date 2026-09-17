@@ -36,8 +36,8 @@
   var TABS = [
     { id: 'stock-information', label: 'Stock Information', strip: 'Coverage universe', module: 'TabStockInfo',
       intro: 'Ratings, target prices, upside, dividends and market capitalisation for BTG Pactual’s Colombia coverage.' },
-    { id: 'valuation', label: 'Valuation Tracker', strip: 'Valuation universe', stage: 4,
-      what: 'P/E, EV/EBITDA, P/BV, net debt/EBITDA, ROE and dividend yield for the actual and estimate years.' },
+    { id: 'valuation', label: 'Valuation Tracker', strip: 'Valuation universe', module: 'TabValuation',
+      intro: 'P/E, EV/EBITDA, P/BV, net debt/EBITDA, ROE and dividend yield for BTG Pactual’s Colombia coverage, for the last reported year and the estimate years.' },
     { id: 'performance', label: 'Stock Performance', strip: 'Stock performance', stage: 5,
       what: '1D, MTD, YTD, 1Y and custom-range returns: price and total return, in local currency and US$.' },
     { id: 'flows', label: 'Equity Flows', strip: 'Equity flows', stage: 6,
@@ -75,6 +75,69 @@
     tip: function (text) { return text ? ' data-tip="' + esc(text) + '" tabindex="0"' : ''; }
   };
   window.App = App;
+
+  // ---------------------------------------------------------------------------
+  // Pieces shared by the table tabs (Stock Information, Valuation Tracker)
+  // ---------------------------------------------------------------------------
+  App.PLACEHOLDER_BANNER = 'Some figures are Yahoo Finance placeholders, not BTG Pactual estimates. They are marked ◦.';
+  App.PLACEHOLDER_TIP = 'Placeholder from Yahoo Finance — not a BTG Pactual estimate.';
+  var RATING_ORDER = { Buy: 0, Neutral: 1, Sell: 2, TBD: 3 };
+
+  /* Lower case without accents, for searching ("Éxito" matches "exito"). */
+  App.deaccent = function (s) {
+    s = String(s || '');
+    return (s.normalize ? s.normalize('NFD').replace(/[̀-ͯ]/g, '') : s).toLowerCase();
+  };
+
+  /* The ◦ placeholder marker with its explanation. */
+  App.mark = function (tip) { return '<span class="mark"' + App.tip(tip) + ' aria-label="' + esc(tip) + '">◦</span>'; };
+
+  /* Currency code after a price: "US$" for USD. */
+  App.ccy = function (code) { return '<span class="ccy">' + esc(Fmt.ccyLabel(code)) + '</span>'; };
+
+  App.ratingOrder = function (rating) { return RATING_ORDER[rating]; };
+
+  /* Rating pill for a share line (TBD dashed; a rating still sourced PLACEHOLDER is faded and marked). */
+  App.ratingPill = function (l) {
+    var cls = { Buy: 'pill-buy', Neutral: 'pill-neutral', Sell: 'pill-sell' }[l.rating] || 'pill-tbd';
+    var placeholder = l.rating !== 'TBD' && l.rating_tp_source === 'PLACEHOLDER';
+    return '<span class="pill ' + cls + (placeholder ? ' placeholder-pill' : '') + '">' + esc(l.rating) + '</span>' +
+           (placeholder ? App.mark('Rating not yet confirmed as BTG Pactual’s (source is PLACEHOLDER).') : '');
+  };
+
+  /* Live price of a share line with its currency, and an amber/red dot when stale or failed (SPEC §7.5). */
+  App.priceCell = function (l, m, price) {
+    if (price === null) {
+      return 'n.a.' + '<span class="error-mark"' + App.tip('No price from Yahoo Finance' + (m && m.status_note ? ': ' + m.status_note : '.')) + '></span>';
+    }
+    var tip = App.audit && m ? 'Last trade ' + (m.last_trade_time ? Fmt.dateTime(m.last_trade_time) + ' (Bogotá)' : Fmt.date(m.last_trade_date)) +
+      '\nSource: Yahoo Finance ' + l.yahoo_ticker : '';
+    var html = '<span' + App.tip(tip) + '>' + Fmt.price(price, l.listing_currency) + '</span>' + App.ccy(l.listing_currency);
+    if (m && m.status === 'stale') {
+      html += '<span class="stale-mark"' + App.tip('Last trade: ' + Fmt.date(m.last_trade_date)) + ' aria-label="Last trade: ' + esc(Fmt.date(m.last_trade_date)) + '"></span>';
+    } else if (m && m.status === 'error') {
+      html += '<span class="error-mark"' + App.tip('The last refresh failed for this share: ' + (m.status_note || 'no detail')) + '></span>';
+    }
+    return html;
+  };
+
+  /* Sort rows by value(row) in direction dir (1 or -1); rows without a value always go last. */
+  App.sortRows = function (rows, value, dir) {
+    return rows.slice().sort(function (a, b) {
+      var x = value(a), y = value(b);
+      if (x === null || x === undefined) { return (y === null || y === undefined) ? 0 : 1; }
+      if (y === null || y === undefined) { return -1; }
+      return (typeof x === 'string' ? x.localeCompare(y) : x - y) * dir;
+    });
+  };
+
+  /* Sector filter buttons for a panel head ("All sectors" plus Config sector_order). */
+  App.sectorChips = function () {
+    return ['ALL'].concat(BTG.sectors).map(function (s) {
+      return '<button type="button" class="ctrl" data-sector="' + esc(s) + '" aria-pressed="false">' +
+             esc(s === 'ALL' ? 'All sectors' : s) + '</button>';
+    }).join('');
+  };
 
   // ---------------------------------------------------------------------------
   // Shell: title, logo link, sidebar, analysts, footer
