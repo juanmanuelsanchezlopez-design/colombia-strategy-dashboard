@@ -38,8 +38,8 @@
       intro: 'Ratings, target prices, upside, dividends and market capitalisation for BTG Pactual’s Colombia coverage.' },
     { id: 'valuation', label: 'Valuation Tracker', strip: 'Valuation universe', module: 'TabValuation',
       intro: 'P/E, EV/EBITDA, P/BV, net debt/EBITDA, ROE and dividend yield for BTG Pactual’s Colombia coverage, for the last reported year and the estimate years.' },
-    { id: 'performance', label: 'Stock Performance', strip: 'Stock performance', stage: 5,
-      what: '1D, MTD, YTD, 1Y and custom-range returns: price and total return, in local currency and US$.' },
+    { id: 'performance', label: 'Stock Performance', strip: 'Stock performance', module: 'TabPerformance',
+      intro: '1D, MTD, YTD, 1Y and custom-range returns for BTG Pactual’s Colombia coverage: price or total return, in local currency or US$.' },
     { id: 'flows', label: 'Equity Flows', strip: 'Equity flows', stage: 6,
       what: 'Monthly BVC flows by investor type, allocation by sector, and the top 5 net purchases and sales.' }
   ];
@@ -77,7 +77,7 @@
   window.App = App;
 
   // ---------------------------------------------------------------------------
-  // Pieces shared by the table tabs (Stock Information, Valuation Tracker)
+  // Pieces shared by the table tabs (Stock Information, Valuation Tracker, Stock Performance)
   // ---------------------------------------------------------------------------
   App.PLACEHOLDER_BANNER = 'Some figures are Yahoo Finance placeholders, not BTG Pactual estimates. They are marked ◦.';
   App.PLACEHOLDER_TIP = 'Placeholder from Yahoo Finance — not a BTG Pactual estimate.';

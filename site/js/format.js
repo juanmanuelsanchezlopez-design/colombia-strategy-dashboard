@@ -101,6 +101,12 @@
     return (p.hour === '24' ? '00' : p.hour) + ':' + p.minute;
   }
 
+  /* "2026-09-17T03:10:00Z" -> "2026-09-16": the calendar date in Bogotá (for date pickers and "today"). */
+  function localDate(iso) {
+    var p = bogotaParts(iso);
+    return p ? p.year + '-' + p.month + '-' + p.day : null;
+  }
+
   /* "2026-08" -> "Aug 2026" */
   function month(ym) {
     var m = /^(\d{4})-(\d{2})$/.exec(String(ym || ''));
@@ -113,6 +119,6 @@
   return {
     num: num, ccyLabel: ccyLabel, price: price, dps: dps, pct: pct, copTn: copTn, usdMn: usdMn,
     multiple: multiple, percent: percent, finUnit: finUnit, finAmount: finAmount,
-    result: result, date: date, dateTime: dateTime, time: time, month: month, yearLabel: yearLabel, MINUS: MINUS
+    result: result, date: date, dateTime: dateTime, time: time, localDate: localDate, month: month, yearLabel: yearLabel, MINUS: MINUS
   };
 }));

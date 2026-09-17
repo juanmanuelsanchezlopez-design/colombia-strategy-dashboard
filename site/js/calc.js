@@ -12,6 +12,7 @@
 
    Works in the browser (window.Calc) and in Node for the tests and the publishing checks (require).
    Stage 3: SPEC §8.1 (market cap), §8.4 (upside, DPS). Stage 4: §8.2 (price basis), §8.3 (multiples).
+   Stage 5: §8.5 (price and total returns, local and US$).
    ============================================================================= */
 (function (root, factory) {
   var Calc = factory();
@@ -333,6 +334,186 @@
     };
   }
 
+  /* ===========================================================================
+     Stage 5 — Stock Performance (SPEC §8.5, §9.3)
+     Dates are "YYYY-MM-DD" strings; series are date-sorted [[date, value], ...].
+     =========================================================================== */
+
+  var FX_PAIR = { COP: 'USDCOP', CAD: 'USDCAD' };
+
+  /* Position of the last point on or before date; -1 if the series starts later. */
+  function indexOnOrBefore(series, date) {
+    var lo = 0, hi = (series || []).length - 1, found = -1;
+    while (lo <= hi) {
+      var mid = (lo + hi) >> 1;
+      if (series[mid][0] <= date) { found = mid; lo = mid + 1; } else { hi = mid - 1; }
+    }
+    return found;
+  }
+
+  /* The point on or before date (a value carried forward over days without one); null if none. */
+  function pointOnOrBefore(series, date) {
+    var i = indexOnOrBefore(series, date);
+    return i < 0 ? null : series[i];
+  }
+
+  function isoDate(y, m, d) {                     // month 1-12; day 0 = last day of the previous month
+    var t = new Date(Date.UTC(y, m - 1, d));
+    return t.toISOString().slice(0, 10);
+  }
+
+  /* SPEC §8.5 — the date whose last close (on or before it) starts each period, for the latest session `reference`.
+     1D: the day before the session (previous session close; performance() uses each line's own latest session,
+     so a line that hasn't traded yet today shows its last session's move, not 0%); MTD: last day of the previous month;
+     YTD: 31 Dec of the previous year; 1Y: the same date one year earlier (29 Feb → 28 Feb). */
+  function periodStart(period, reference) {
+    var y = +reference.slice(0, 4), m = +reference.slice(5, 7), d = +reference.slice(8, 10);
+    switch (period) {
+      case '1D': return isoDate(y, m, d - 1);
+      case 'MTD': return isoDate(y, m, 0);
+      case 'YTD': return (y - 1) + '-12-31';
+      case '1Y': return isoDate(y - 1, m, m === 2 && d === 29 ? 28 : d);
+    }
+    return null;
+  }
+
+  /* A share line's prices for returns: daily closes before its latest trade date, then the latest price on that
+     date (it replaces that day's close). */
+  function priceSeries(marketLine) {
+    var history = (marketLine && marketLine.history) || [];
+    var last = marketLine && isNum(marketLine.last_price) && marketLine.last_trade_date ? marketLine.last_price : null;
+    if (last === null) { return history.slice(); }
+    var out = history.filter(function (p) { return p[0] < marketLine.last_trade_date; });
+    out.push([marketLine.last_trade_date, last]);
+    return out;
+  }
+
+  /* SPEC §8.5 — return of one share line.
+     series: priceSeries(); opts: {
+       start: date (the last close on or before it is the start), end: date or null (null = latest price),
+       total: false = price return, true = total return; usd: false = listing currency, true = US$;
+       currency: listing currency; dividends: [[ex_date, amount]]; fx: local-per-US$ history; fxLatest: latest rate }
+     Price return = P_end ÷ P_start − 1.
+     Total return = TRI_end ÷ TRI_start − 1, TRI_t = TRI_(t−1) × (P_t + D_t) ÷ P_(t−1): dividends are reinvested on
+     their ex-date; one paid on a day with no price is reinvested at the next close.
+     US$: each price and dividend ÷ that day's local-per-US$ rate (carried forward over holidays); the latest price
+     uses the latest rate. US$-listed shares need no FX.
+     n.a. with history_start when the history doesn't reach the start date. */
+  function lineReturn(series, opts) {
+    if (!series || !series.length) { return na('no price history'); }
+    var si = indexOnOrBefore(series, opts.start);
+    if (si < 0) { return na('history starts ' + series[0][0], { history_start: series[0][0] }); }
+    var ei = opts.end === null || opts.end === undefined ? series.length - 1 : indexOnOrBefore(series, opts.end);
+    if (ei < si) { return na('the end date is before the start date'); }
+    var latest = ei === series.length - 1 && (opts.end === null || opts.end === undefined || opts.end >= series[ei][0]);
+    var needFx = opts.usd && opts.currency !== 'USD';
+    var fxMissing = null;
+
+    function rate(k) {
+      if (!needFx) { return 1; }
+      if (k === series.length - 1 && latest && isNum(opts.fxLatest)) { return opts.fxLatest; }
+      var p = pointOnOrBefore(opts.fx || [], series[k][0]);
+      if (!p || !isNum(p[1]) || p[1] <= 0) { fxMissing = fxMissing || series[k][0]; return null; }
+      return p[1];
+    }
+    function price(k) { var r = rate(k); return r === null ? null : series[k][1] / r; }
+
+    var p0 = price(si), p1 = price(ei);
+    var extra = { start: series[si], end: series[ei], latest: latest,
+                  fx_start: needFx ? rate(si) : null, fx_end: needFx ? rate(ei) : null, dividends: [] };
+    if (fxMissing) { return na('no US$/' + opts.currency + ' rate on ' + fxMissing, extra); }
+    if (!(series[si][1] > 0) || !(series[ei][1] > 0)) { return nm('price is zero or negative', extra); }
+
+    var divs = (opts.dividends || []).filter(function (d) { return d[0] > series[si][0] && d[0] <= series[ei][0] && isNum(d[1]); })
+      .sort(function (a, b) { return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0; });
+    extra.no_dividends = divs.length === 0;
+    if (!opts.total) { return ok(p1 / p0 - 1, extra); }
+
+    var tri = 1, j = 0, k;
+    for (k = si + 1; k <= ei; k++) {
+      var d = 0, prev = price(k - 1), now = price(k);
+      while (j < divs.length && divs[j][0] <= series[k][0]) {
+        var r = rate(k);
+        extra.dividends.push({ ex_date: divs[j][0], amount: divs[j][1], reinvested: series[k][0], fx: needFx ? r : null });
+        d += r === null ? 0 : divs[j][1] / r;
+        j++;
+      }
+      if (fxMissing) { return na('no US$/' + opts.currency + ' rate on ' + fxMissing, extra); }
+      tri = tri * (now + d) / prev;
+    }
+    return ok(tri - 1, extra);
+  }
+
+  /* The corporate events (market data "events") a return runs across: its start close is on or before the last
+     session before the event, and its end on or after the first session after it. Returns their notes. */
+  function eventsSpanned(events, lineId, startDate, endDate) {
+    return (events || []).filter(function (e) {
+      return e.lines.indexOf(lineId) >= 0 && startDate <= e.last_before && endDate >= e.first_after;
+    }).map(function (e) { return e.note; });
+  }
+
+  /* SPEC §8.5 — checks a custom range before it is applied: both dates filled, start before end, start not before
+     the price history, end not after today. Returns { ok: true } or { ok: false, problem: 'missing'|'order'|'start'|'end' }. */
+  function checkCustomRange(start, end, earliest, today) {
+    if (!start || !end) { return { ok: false, problem: 'missing' }; }
+    if (start >= end) { return { ok: false, problem: 'order' }; }
+    if (earliest && start < earliest) { return { ok: false, problem: 'start' }; }
+    if (today && end > today) { return { ok: false, problem: 'end' }; }
+    return { ok: true };
+  }
+
+  /* SPEC §8.5, §9.3 — the Stock Performance table for every share line.
+     options: { total: bool, usd: bool, custom: { start, end } }.
+     reference = the latest session in the market data. MTD, YTD and 1Y start from periodStart(reference); 1D from
+     the previous close of each line's own latest session. The custom range ends at the latest price when its end
+     date is on or after the latest session.
+     Dividends come from Dividends_Override when that sheet has any row for the line (they replace Yahoo's), else Yahoo. */
+  function performance(btg, market, options) {
+    var mLines = (market && market.lines) || {};
+    var mFx = (market && market.fx) || {};
+    var dates = Object.keys(mLines).map(function (id) { return mLines[id].last_trade_date; }).filter(Boolean).sort();
+    var reference = (market && market.reference_session) || dates[dates.length - 1] || null;
+    var starts = Object.keys(mLines).map(function (id) { return mLines[id].history_start; }).filter(Boolean).sort();
+    var custom = (options && options.custom) || {};
+    var periods = reference ? {
+      d1: { start: null, end: null },                         // per line: see below
+      mtd: { start: periodStart('MTD', reference), end: null },
+      ytd: { start: periodStart('YTD', reference), end: null },
+      y1: { start: periodStart('1Y', reference), end: null },
+      custom: { start: custom.start || periodStart('YTD', reference),
+                end: custom.end && custom.end < reference ? custom.end : null }
+    } : {};
+    var overrides = {};
+    (btg.dividends_override || []).forEach(function (d) {
+      (overrides[d.line_id] = overrides[d.line_id] || []).push([d.ex_date, d.amount]);
+    });
+    return {
+      reference: reference,
+      earliest: starts[0] || null,
+      periods: periods,
+      lines: btg.lines.map(function (l) {
+        var m = mLines[l.line_id] || null;
+        var series = priceSeries(m);
+        var pair = FX_PAIR[l.listing_currency];
+        var fx = pair && mFx[pair] ? mFx[pair] : {};
+        var dividendSource = overrides[l.line_id] ? 'Dividends_Override' : 'Yahoo Finance';
+        var returns = {};
+        Object.keys(periods).forEach(function (key) {
+          var start = key === 'd1' ? (series.length ? periodStart('1D', series[series.length - 1][0]) : reference) : periods[key].start;
+          var r = lineReturn(series, {
+            start: start, end: periods[key].end, total: !!(options && options.total), usd: !!(options && options.usd),
+            currency: l.listing_currency, dividends: overrides[l.line_id] || (m ? m.dividends : []),
+            fx: fx.history || [], fxLatest: fx.last
+          });
+          r.events = r.start && r.end ? eventsSpanned(market && market.events, l.line_id, r.start[0], r.end[0]) : [];
+          r.dividend_source = dividendSource;
+          returns[key] = r;
+        });
+        return { line: l, market: m, price: m && isNum(m.last_price) ? m.last_price : null, returns: returns };
+      })
+    };
+  }
+
   return {
     perUsd: perUsd,
     convert: convert,
@@ -351,6 +532,13 @@
     netDebtEbitda: netDebtEbitda,
     returnOnEquity: returnOnEquity,
     dividendYield: dividendYield,
-    valuation: valuation
+    valuation: valuation,
+    indexOnOrBefore: indexOnOrBefore,
+    periodStart: periodStart,
+    priceSeries: priceSeries,
+    lineReturn: lineReturn,
+    eventsSpanned: eventsSpanned,
+    checkCustomRange: checkCustomRange,
+    performance: performance
   };
 }));

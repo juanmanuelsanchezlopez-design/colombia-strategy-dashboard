@@ -8,7 +8,8 @@ timezone from its Config sheet. They are read the first time a script asks for t
 The website copy on GitHub has no workbook (it stays on Juan's computer). There the same
 lines and settings are read from the published site/data/btg_data.js (DECISIONS D21).
 
-What stays here (not Juan's data): FX sanity ranges and known-bad Yahoo price days.
+What stays here (not Juan's data): FX sanity ranges, known-bad Yahoo price days and corporate events
+that make returns across them misleading.
 """
 
 import json
@@ -32,14 +33,34 @@ FX_FOR_CURRENCY = {"COP": "USDCOP", "CAD": "USDCAD", "USD": None}
 
 SNAPSHOTS_KEPT = 30          # SPEC §4: audit/market_snapshots keeps the last 30
 
-# Days whose Yahoo prices are errors and are removed from the history.
-# Decided by Juan on 16 Sep 2026 after audit/ticker_verification.md: on both days
-# most BVC lines show a 10–26% drop that is fully reversed the next session.
-# "applies_to" is a ticker suffix: ".CL" = every BVC line. Dividends are never removed.
+# Days whose Yahoo prices are errors and are removed from the history. Dividends are never removed.
+# "applies_to": ".CL" (starts with a dot) = every ticker with that suffix, i.e. every BVC line;
+# otherwise one exact Yahoo ticker.
+# - 3 May 2024 and 19 Feb 2025 (Juan, 16 Sep 2026, DECISIONS D9): most BVC lines drop 10–26% and fully
+#   reverse the next session.
+# - 21–25 Jul 2025 (Juan, 17 Sep 2026, DECISIONS D23): trading in Grupo Argos and Grupo Sura was stopped
+#   for the spin-off; Yahoo shows a flat made-up price on those days (e.g. GRUPOARGOS 14,271.16 between
+#   its last trade at 24,800 and its reopening at 17,260).
+SPIN_OFF_TICKERS = ("GRUPOARGOS.CL", "PFGRUPOARG.CL", "GRUPOSURA.CL", "PFGRUPSURA.CL")
+SPIN_OFF_HALT_DAYS = ("2025-07-21", "2025-07-22", "2025-07-23", "2025-07-24", "2025-07-25")
 EXCLUDED_PRICE_DAYS = [
     # (date,        applies_to, reason)
     ("2024-05-03", ".CL", "Yahoo price error on most BVC lines (reversed next session); excluded by Juan, 16 Sep 2026"),
     ("2025-02-19", ".CL", "Yahoo price error on most BVC lines (reversed next session); excluded by Juan, 16 Sep 2026"),
+] + [
+    (day, ticker, "No trading (July 2025 spin-off); Yahoo shows a flat placeholder price; excluded by Juan, 17 Sep 2026")
+    for day in SPIN_OFF_HALT_DAYS for ticker in SPIN_OFF_TICKERS
+]
+
+# Corporate events that make a return across them misleading (Juan, 17 Sep 2026, DECISIONS D10, D23).
+# Published in market_data.js ("events"). The Stock Performance tab marks any return whose start is on or
+# before last_before and whose end is on or after first_after, with the note as its tooltip.
+CORPORATE_EVENTS = [
+    {"lines": ["GRUPOARGOS", "PFGRUPOARG", "GRUPOSURA", "PFGRUPSURA"],
+     "last_before": "2025-07-18", "first_after": "2025-07-28",
+     "note": "This period includes the July 2025 spin-off of Grupo Argos and Grupo Sura: trading stopped "
+             "21–25 Jul 2025 and the shares reopened lower after the distribution to shareholders. Yahoo Finance "
+             "records no value for the distribution, so this return does not include it."},
 ]
 
 

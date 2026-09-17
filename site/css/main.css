@@ -297,3 +297,15 @@ table.data.valuation thead tr.group-row th.group-head { text-align: center; bord
 table.data.valuation thead th.group-start { border-left: 1px solid var(--on-navy-40); }
 table.data.valuation thead tr.year-row th:first-child { position: sticky; left: auto; border-right: none; z-index: 2; }
 table.data.valuation thead tr.year-row th .sort-btn { justify-content: flex-end; }
+
+/* ---------- Stock Performance: custom range (SPEC §9.3; inputs as the search box, rigi:306-313) ---------- */
+.range { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.range-label { font-size: var(--fs-count); color: var(--text-muted); }
+.date-input {
+  font-family: var(--font); font-size: var(--fs-input); color: var(--text); background: var(--surface);
+  border: 1px solid var(--border-firm); border-radius: var(--radius-control); padding: var(--input-pad);
+}
+.date-input:focus { outline: 2px solid var(--navy); outline-offset: -1px; }
+.btn-small { padding: var(--button-outline-pad); font-size: var(--fs-button-outline); }
+.range-error { font-size: var(--fs-count); color: var(--maroon); font-weight: var(--fw-semibold); }
+.range-error:empty { display: none; }

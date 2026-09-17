@@ -189,7 +189,10 @@ def frame_to_series(frame, today):
 
 
 def applies(ticker, applies_to):
-    return applies_to == "*" or ticker.endswith(applies_to)
+    """'*' = every ticker; '.CL' (starts with a dot) = every ticker with that suffix; otherwise one exact ticker."""
+    if applies_to == "*":
+        return True
+    return ticker.endswith(applies_to) if applies_to.startswith(".") else ticker == applies_to
 
 
 def apply_exclusions(line_id, ticker, closes, excluded=None):
@@ -387,6 +390,8 @@ def finish_payload(payload, now, mode):
     times = [l["last_trade_time"] for l in payload["lines"].values() if l["last_trade_time"]]
     statuses = [l["status"] for l in payload["lines"].values()] + [f["status"] for f in payload["fx"].values()]
     payload.update({
+        "excluded_price_days": [{"date": d, "applies_to": a, "reason": r} for d, a, r in cfg.EXCLUDED_PRICE_DAYS],
+        "events": cfg.CORPORATE_EVENTS,
         "generated_at": iso_utc(now),
         "mode": mode,
         "prices_as_of": max(times) if times else None,
@@ -409,7 +414,6 @@ def build_full(now):
     payload = {"_generated_file": "GENERATED FILE: do not edit by hand. Produced by scripts/fetch_market_data.py.",
                "source": f"Yahoo Finance via yfinance {yf.__version__} (auto_adjust=False)",
                "history_years": cfg.HISTORY_YEARS,
-               "excluded_price_days": [{"date": d, "applies_to": s, "reason": r} for d, s, r in cfg.EXCLUDED_PRICE_DAYS],
                "fx": {}, "lines": {}}
     excluded_log, failures = [], []
 
@@ -516,7 +520,8 @@ def build_quotes_only(now):
             continue
         closes, dividends, last_traded = frame_to_series(q["bars"], today)
         skip = excluded_dates_for(line.yahoo_ticker)
-        entry["history"] = trim_history(merge_points(entry["history"], closes, skip), start)
+        merged = merge_points(entry["history"], closes, skip)
+        entry["history"] = trim_history([pt for pt in merged if pt[0] not in skip], start)   # also drops newly excluded days
         entry["dividends"] = trim_history(merge_points(entry["dividends"], dividends), start)
         entry["history_start"] = entry["history"][0][0] if entry["history"] else None
         entry["last_price"] = q["last_price"]
