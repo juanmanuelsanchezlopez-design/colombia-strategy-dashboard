@@ -199,7 +199,7 @@
     if (ui.showAll === null) { ui.showAll = A.btg.config.share_display_mode === 'all_lines'; }
     host.innerHTML =
       '<section class="panel" aria-labelledby="spTitle">' +
-        '<div class="panel-head"><span id="spTitle">Returns by sector</span><span class="spacer"></span>' +
+        '<div class="panel-head"><span id="spTitle" role="heading" aria-level="3">Returns by sector</span><span class="spacer"></span>' +
           '<span class="ctrls">' +
             '<span class="ctrl-group" role="group" aria-label="Filter by sector">' + App.sectorChips() + '</span>' +
             toggleGroup('Return type', 'total', [{ value: '0', label: 'Price' }, { value: '1', label: 'Total' }], ui.total ? '1' : '0') +

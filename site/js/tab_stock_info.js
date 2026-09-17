@@ -260,7 +260,7 @@
     host.innerHTML =
       '<div id="siBanner"></div>' +
       '<section class="panel" aria-labelledby="siTitle">' +
-        '<div class="panel-head"><span id="siTitle">Coverage by sector</span><span class="spacer"></span>' +
+        '<div class="panel-head"><span id="siTitle" role="heading" aria-level="3">Coverage by sector</span><span class="spacer"></span>' +
           '<span class="ctrls"><span class="ctrl-group" role="group" aria-label="Filter by sector">' + chips + '</span>' +
           '<button type="button" class="ctrl ctrl-solo" id="siAll" aria-pressed="false">Show all share classes</button></span>' +
         '</div>' +

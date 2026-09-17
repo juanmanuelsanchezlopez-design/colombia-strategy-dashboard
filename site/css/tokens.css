@@ -217,7 +217,7 @@
 
   /* ---- APPROVED (Q3, 16 Sep 2026): needed for Colombia, in neither reference */
   --rating-buy:      #1A7A4C;   /* APPROVED mapping; colour rigi:19, pill shape rigi:331-334 */
-  --rating-neutral:  #8a97a8;   /* APPROVED mapping; colour rigi:336 */
+  --rating-neutral:  #5c7183;   /* APPROVED mapping; colour rigi:283 (was rigi:336 #8a97a8: white text 2.97:1, below WCAG AA; Juan, 17 Sep 2026, D26) */
   --rating-sell:     #A73444;   /* APPROVED mapping; colour rigi:337 */
   --rating-tbd:      #6b7b96;   /* APPROVED: dashed outline + text; rigi:25, dashed style rigi:274 */
   --sector-band-bg:  #00306e;   /* APPROVED: RIGI hover navy rigi:322 */

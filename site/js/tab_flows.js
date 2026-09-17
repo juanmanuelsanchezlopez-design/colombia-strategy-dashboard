@@ -118,6 +118,14 @@
     return box.firstChild;
   }
 
+  /* A screen-reader description of a chart: its title and the figures of one column of bars. */
+  function describe(host, id, heading, values) {
+    var canvas = host.querySelector('#' + id);
+    if (!canvas || !values) { return; }
+    canvas.setAttribute('aria-label', host.querySelector('#' + id + 'Box').getAttribute('data-title') + '. ' + heading + ': ' +
+      CHART_INVESTORS.map(function (i) { return label(window.App, i, 'chart') + ' ' + Fmt.num(values[i], 1); }).join(', ') + ' US$mn.');
+  }
+
   function drawCharts(host, A, month) {
     destroyCharts();
     ['flChart1', 'flChart2', 'flChart3'].forEach(function (id) { freshCanvas(host, id); });
@@ -132,6 +140,7 @@
     barChart(host.querySelector('#flChart1'), m13.map(function (r) { return Fmt.monthShort(r.month); }),
       CHART_INVESTORS.map(function (id) { return dataset(A, id, m13.map(function (r) { return r.values ? r.values[id] : null; })); }),
       { yTitle: 'US$mn', labelled: LABELLED, decimals: 1 });
+    describe(host, 'flChart1', Fmt.month(month), m13[m13.length - 1].values);
 
     var avg = Calc.averageFlows(f.monthly, month, CHART_INVESTORS);
     var box2 = host.querySelector('#flChart2Box');
@@ -139,6 +148,7 @@
       barChart(host.querySelector('#flChart2'), ['L12M average'],
         CHART_INVESTORS.map(function (id) { return dataset(A, id, [avg.value[id]]); }),
         { yTitle: 'US$mn, monthly average', labelled: 'all', decimals: 1 });
+      describe(host, 'flChart2', 'Average of the 12 months to ' + Fmt.month(month), avg.value);
     } else {
       box2.innerHTML = '<div class="empty">Needs ' + avg.needs + ' more month' + (avg.needs === 1 ? '' : 's') + ' of data.</div>';
     }
@@ -149,6 +159,7 @@
     }), CHART_INVESTORS.map(function (id) {
       return dataset(A, id, years.map(function (y) { return y.values ? y.values[id] : null; }));
     }), { yTitle: 'US$mn, cumulative', labelled: LABELLED, decimals: 0 });
+    describe(host, 'flChart3', 'Year to date ' + years[years.length - 1].year, years[years.length - 1].values);
     var incomplete = years.filter(function (y) { return !y.complete; });
     host.querySelector('#flChart3Note').textContent = incomplete.length
       ? '* Incomplete year: ' + incomplete.map(function (y) { return y.year + ' (' + y.months + ' of ' + y.expected + ' months)'; }).join(', ') + '. '
@@ -218,7 +229,7 @@
       }
     });
     return '<section class="panel top5" aria-label="' + App.esc(card.title + ': top 5 net purchases and sales') + '">' +
-      '<div class="panel-head">' + App.esc(card.title) + ' — top 5 purchases and sales (US$mn)</div>' +
+      '<div class="panel-head" role="heading" aria-level="3">' + App.esc(card.title) + ' — top 5 purchases and sales (US$mn)</div>' +
       '<div class="table-scroll"><table class="data top5-table"><thead><tr>' +
         '<th scope="col" colspan="2">Main net purchases</th><th scope="col" colspan="2" class="split">Main net sales</th>' +
       '</tr></thead><tbody>' + body + '</tbody></table></div></section>';
@@ -256,7 +267,7 @@
   }
 
   function chartPanel(id, title, height, note) {
-    return '<section class="panel" aria-labelledby="' + id + 'Title"><div class="panel-head" id="' + id + 'Title">' + App.esc(title) + '</div>' +
+    return '<section class="panel" aria-labelledby="' + id + 'Title"><div class="panel-head" role="heading" aria-level="3" id="' + id + 'Title">' + App.esc(title) + '</div>' +
       '<div class="chart-scroll"><div class="chart-box" id="' + id + 'Box" data-title="' + App.esc(title) + '" style="height:' + height + 'px"></div></div>' +
       '<div class="panel-note"><p>' + (note || '') + SOURCE + '</p></div></section>';
   }
@@ -285,13 +296,13 @@
         chartPanel('flChart3', 'Chart 3 — Annual cumulative flows (US$mn)', 300,
                    '<span id="flChart3Note"></span>Sum of each year’s months; the last year runs to the selected month. ') +
       '</div>' +
-      '<section class="panel" aria-labelledby="flTable1Title"><div class="panel-head" id="flTable1Title">Table 1</div>' +
+      '<section class="panel" aria-labelledby="flTable1Title"><div class="panel-head" role="heading" aria-level="3" id="flTable1Title">Table 1</div>' +
         '<div class="table-scroll"><table class="data flows-table" id="flTable1"></table></div>' +
         '<div class="panel-note"><p>% = value ÷ the row total. ' + SOURCE + '</p></div></section>' +
       '<div class="top5-grid" id="flTop5"></div>' +
       '<p class="flows-note">Tables 2–7: the five largest net purchases and sales per security over the selected month and the 3, 6 and 12 months to it, ' +
         'from Flows_BySecurity. Only securities marked include_in_top5 = Y in Flows_SecurityMap count; combined PF & ORD rows never do. ' + SOURCE + '</p>' +
-      '<section class="panel" aria-labelledby="flTable8Title"><div class="panel-head" id="flTable8Title">Table 8</div>' +
+      '<section class="panel" aria-labelledby="flTable8Title"><div class="panel-head" role="heading" aria-level="3" id="flTable8Title">Table 8</div>' +
         '<div class="table-scroll"><table class="data flows-table" id="flTable8"></table></div>' +
         '<div class="panel-note"><p>Every security traded in the month, A–Z. PF & ORD rows add up a company’s share classes ' +
         '(built by the site from Flows_SecurityMap). – = no net flow. ' + SOURCE + '</p></div></section>';

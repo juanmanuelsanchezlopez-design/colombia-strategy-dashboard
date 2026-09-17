@@ -229,7 +229,7 @@
     host.innerHTML =
       '<div id="vtBanner"></div>' +
       '<section class="panel" aria-labelledby="vtTitle">' +
-        '<div class="panel-head"><span id="vtTitle">Valuation by sector</span><span class="spacer"></span>' +
+        '<div class="panel-head"><span id="vtTitle" role="heading" aria-level="3">Valuation by sector</span><span class="spacer"></span>' +
           '<span class="ctrls"><span class="ctrl-group" role="group" aria-label="Filter by sector">' + App.sectorChips() + '</span></span>' +
         '</div>' +
         '<div class="controls">' +

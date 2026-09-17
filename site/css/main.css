@@ -344,3 +344,8 @@ table.data.top5-table thead th:first-child { position: static; }
   .chart-box { min-width: 760px; }                                   /* rigi:413-414: charts scroll sideways */
 }
 
+/* ---------- accessibility (Stage 7) ---------- */
+@media (prefers-reduced-motion: reduce) {                     /* visitors who turn off animations in their system settings */
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
+
